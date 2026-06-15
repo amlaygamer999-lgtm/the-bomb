@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>القنبلة الموقوتة 💣</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --primary: #f59e0b; /* برتقالي */
+            --danger: #ef4444; /* أحمر */
+            --success: #10b981;
+            --text: #f8fafc;
+            --glass: rgba(30, 41, 59, 0.85);
+        }
+
+        * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; outline: none; -webkit-tap-highlight-color: transparent;}
+
+        body {
+            margin: 0; padding: 0; background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+            color: var(--text); min-height: 100vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: flex-start; overflow-x: hidden;
+        }
+
+        .screen { display: none; width: 100%; max-width: 600px; flex-direction: column; align-items: center; padding: 20px; text-align: center; animation: fadeIn 0.5s; }
+        .active { display: flex; }
+
+        h1 { color: var(--primary); font-size: 3rem; text-shadow: 0 5px 15px rgba(245, 158, 11, 0.5); margin-bottom: 10px; }
+        
+        .glass-panel {
+            background: var(--glass); padding: 25px; border-radius: 20px; width: 100%;
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+
+        /* --- شاشة الإعدادات --- */
+        .input-group { display: flex; gap: 10px; width: 100%; margin-bottom: 20px; }
+        input[type="text"] {
+            flex: 1; padding: 15px; font-size: 1.2rem; border-radius: 15px; border: 2px solid var(--primary);
+            background: rgba(0,0,0,0.5); color: white; text-align: center;
+        }
+        .btn-add { background: var(--success); color: white; border: none; padding: 10px 20px; font-size: 1.5rem; border-radius: 15px; cursor: pointer; }
+        
+        .players-list { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; }
+        .player-badge { background: rgba(255,255,255,0.1); padding: 10px 15px; border-radius: 50px; display: flex; align-items: center; gap: 10px; font-weight: bold; border: 1px solid rgba(255,255,255,0.2);}
+        .player-badge button { background: none; border: none; color: var(--danger); font-size: 1.2rem; cursor: pointer; padding: 0;}
+
+        /* --- الأزرار --- */
+        .btn-main {
+            background: linear-gradient(135deg, var(--danger), #b91c1c);
+            color: white; border: none; padding: 20px 40px; font-size: 1.8rem; font-weight: 900;
+            border-radius: 50px; cursor: pointer; width: 100%; box-shadow: 0 10px 30px rgba(239, 68, 68, 0.5);
+            transition: 0.2s; margin-top: 10px; text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .btn-main:active { transform: scale(0.95); }
+        .btn-start { background: linear-gradient(135deg, var(--primary), #d97706); box-shadow: 0 10px 30px rgba(245, 158, 11, 0.5); }
+
+        /* --- شاشة اللعب --- */
+        .category-box { background: rgba(245, 158, 11, 0.1); border: 2px solid var(--primary); padding: 15px; border-radius: 15px; font-size: 1.5rem; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
+        .current-player { font-size: 2.5rem; font-weight: 900; color: white; margin-bottom: 20px; text-shadow: 0 0 15px rgba(255,255,255,0.5); background: rgba(239, 68, 68, 0.2); padding: 10px 30px; border-radius: 50px; border: 2px solid var(--danger);}
+        
+        .bomb-container { font-size: 8rem; line-height: 1; margin: 30px 0; display: inline-block; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.8)); transition: transform 0.1s;}
+        
+        /* أنيميشن القنبلة */
+        .ticking-slow { animation: shake 0.5s infinite; }
+        .ticking-fast { animation: shake 0.2s infinite; filter: drop-shadow(0 0 30px red); color: #ffcccc;}
+        .ticking-crazy { animation: shake 0.05s infinite; filter: drop-shadow(0 0 50px red); transform: scale(1.2); color: #ffffff;}
+
+        @keyframes shake {
+            0% { transform: translate(2px, 2px) rotate(0deg); }
+            25% { transform: translate(-2px, -2px) rotate(-5deg); }
+            50% { transform: translate(-2px, 2px) rotate(5deg); }
+            75% { transform: translate(2px, -2px) rotate(-5deg); }
+            100% { transform: translate(2px, 2px) rotate(0deg); }
+        }
+
+        .status-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 30px; width: 100%; border-top: 1px solid #333; padding-top: 20px;}
+        .status-player { background: rgba(0,0,0,0.5); padding: 10px 15px; border-radius: 10px; text-align: center; font-weight: bold; width: 45%; }
+        .hearts { color: var(--danger); letter-spacing: 2px; margin-top: 5px; font-size: 1.2rem;}
+        .dead { opacity: 0.3; text-decoration: line-through; }
+
+        /* --- شاشة الانفجار --- */
+        #explosion-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: red; z-index: -1; opacity: 0; transition: 0.2s; pointer-events: none; }
+        .boom-text { font-size: 5rem; color: yellow; text-shadow: 0 0 20px red, 0 0 40px darkred; animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-bottom: 0;}
+        .boom-sub { font-size: 2rem; margin-top: 0; margin-bottom: 30px; }
+
+        @keyframes pop { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <!-- خلفية وميض الانفجار -->
+    <div id="explosion-bg"></div>
+
+    <!-- ================= 1. شاشة الإعدادات ================= -->
+    <div id="scr-setup" class="screen active">
+        <h1>القنبلة الموقوتة 💣</h1>
+        <p style="color:#aaa; font-size:1.1rem; margin-bottom: 30px;">لعبة سرعة، توتر، وفضايح! اكتبوا أسماءكم للبدء (من 2 إلى 8 لاعبين)</p>
+
+        <div class="glass-panel">
+            <div class="input-group">
+                <input type="text" id="player-input" placeholder="اكتب اسم اللاعب..." onkeypress="if(event.key === 'Enter') addPlayer()">
+                <button class="btn-add" onclick="addPlayer()">➕</button>
+            </div>
+            <div class="players-list" id="players-list">
+                <!-- أسماء اللاعبين تظهر هنا -->
+            </div>
+        </div>
+
+        <button class="btn-main btn-start" onclick="startGame()">بدء اللعبة 🚀</button>
+    </div>
+
+    <!-- ================= 2. شاشة اللعب ================= -->
+    <div id="scr-game" class="screen">
+        <div class="category-box">
+            <span>التصنيف: </span><br>
+            <span id="category-text" style="color:white; font-size: 2rem;">أشياء موجودة في المطبخ</span>
+        </div>
+
+        <p style="margin: 0; color: #aaa; font-size: 1.2rem;">القنبلة الآن في يد:</p>
+        <div class="current-player" id="current-player-name">عبادي</div>
+
+        <div class="bomb-container" id="bomb-icon">💣</div>
+
+        <button class="btn-main" id="pass-btn" onclick="passBomb()">مرر القنبلة بسرعة! 🏃‍♂️</button>
+        <p style="color:#64748b; font-size:0.9rem; margin-top:10px;">(أمانة: لا تضغط الزر لين تقول الإجابة بصوت عالي!)</p>
+
+        <div class="status-bar" id="game-status-bar">
+            <!-- حالة قلوب اللاعبين -->
+        </div>
+    </div>
+
+    <!-- ================= 3. شاشة الانفجار ================= -->
+    <div id="scr-boom" class="screen">
+        <h1 class="boom-text">بووووووم! 💥</h1>
+        <h2 class="boom-sub" id="boom-loser">عبادي انفجرت بوجهه!</h2>
+        <div class="glass-panel" style="background: rgba(239, 68, 68, 0.2); border-color: red;">
+            <h3 style="margin:0;">خسرت قلب ❤️‍🩹</h3>
+            <p id="boom-lives-left">باقي لك قلوب</p>
+        </div>
+        <button class="btn-main btn-start" onclick="startRound()">الجولة التالية 🚀</button>
+    </div>
+
+    <!-- ================= 4. شاشة النهاية ================= -->
+    <div id="scr-winner" class="screen">
+        <h1 style="font-size: 5rem; margin-bottom: 0;">👑</h1>
+        <h1 style="color: var(--success); font-size: 3rem; margin-top: 0;">عندنا فائز!</h1>
+        <div class="glass-panel">
+            <h2 id="winner-name" style="font-size: 2.5rem; color: white; margin: 0;">عبادي</h2>
+            <p style="color: #aaa;">هو الوحيد اللي نجى من الانفجارات!</p>
+        </div>
+        <button class="btn-main btn-start" onclick="location.reload()">العب من جديد 🔄</button>
+    </div>
+
+    <script>
+        // --- قائمة التصنيفات (أسئلة) ---
+        const categories = [
+            "أشياء موجودة في الثلاجة 🧊",
+            "ماركات سيارات 🚗",
+            "أشياء لونها أحمر 🍎",
+            "دول عربية 🇸🇦",
+            "مطاعم وجبات سريعة 🍔",
+            "أشياء تسويها أول ما تصحى 🛏️",
+            "أشياء تطير في الجو ✈️",
+            "أجزاء من جسم الإنسان 👀",
+            "أشياء تلقاها في المدرسة 🏫",
+            "حيوانات مفترسة 🦁",
+            "فواكه بدون بذور 🍌",
+            "أشياء تشتغل بالبطارية 🔋",
+            "أسماء أولاد بحرف الميم 👦",
+            "أسماء بنات بحرف السين 👧",
+            "أشياء موجودة في الحمام 🛁",
+            "مهن ووظائف 👮‍♂️",
+            "أشياء نلبسها 👕",
+            "أشياء حارة 🌶️",
+            "كلمات تقولها إذا عصبت 🤬",
+            "أشياء موجودة في البحر 🐟",
+            "أشياء تشتريها من البقالة 🛒",
+            "أشياء حجمها أصغر من كف اليد ✋",
+            "ألوان 🎨",
+            "رياضات تستخدم فيها كورة ⚽"
+        ];
+
+        let players = [];
+        let currentPlayerIndex = 0;
+        let bombTimer;
+        let fuseTimeLimit; 
+        let timeElapsed = 0;
+        let isExploded = false;
+
+        // --- إعداد اللاعبين ---
+        function addPlayer() {
+            const input = document.getElementById('player-input');
+            const name = input.value.trim();
+            if(name && players.length < 8) {
+                players.push({ name: name, lives: 3 });
+                input.value = '';
+                updatePlayersList();
+            } else if (players.length >= 8) {
+                alert("الحد الأقصى 8 لاعبين!");
+            }
+        }
+
+        function removePlayer(index) {
+            players.splice(index, 1);
+            updatePlayersList();
+        }
+
+        function updatePlayersList() {
+            const list = document.getElementById('players-list');
+            list.innerHTML = '';
+            players.forEach((p, index) => {
+                list.innerHTML += `<div class="player-badge">${p.name} <button onclick="removePlayer(${index})">✖</button></div>`;
+            });
+        }
+
+        // --- التحكم بالشاشات ---
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // --- بدء اللعبة ---
+        function startGame() {
+            if(players.length < 2) return alert("تحتاجون لاعبين على الأقل للعب!");
+            
+            // ترتيب اللاعبين عشوائياً في البداية
+            players = players.sort(() => Math.random() - 0.5);
+            currentPlayerIndex = 0;
+            startRound();
+        }
+
+        function startRound() {
+            // تصفية اللاعبين (عشان نتأكد محد ميت يمسك القنبلة)
+            let alivePlayers = players.filter(p => p.lives > 0);
+            if (alivePlayers.length === 1) {
+                // فيه فائز!
+                document.getElementById('winner-name').innerText = alivePlayers[0].name;
+                showScreen('scr-winner');
+                return;
+            }
+
+            // تأكد إن اللاعب الحالي حي، وإلا روح للي بعده
+            while(players[currentPlayerIndex].lives <= 0) {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            }
+
+            isExploded = false;
+            timeElapsed = 0;
+            document.getElementById('explosion-bg').style.opacity = '0';
+
+            // اختيار تصنيف عشوائي
+            const randomCat = categories[Math.floor(Math.random() * categories.length)];
+            document.getElementById('category-text').innerText = randomCat;
+
+            // تحديد وقت عشوائي للقنبلة (بين 15 و 40 ثانية)
+            fuseTimeLimit = Math.floor(Math.random() * (40000 - 15000 + 1)) + 15000;
+            
+            updateGameUI();
+            showScreen('scr-game');
+
+            // بدء التوقيت الداخلي للقنبلة (يشتغل كل 100 ملي ثانية)
+            clearInterval(bombTimer);
+            bombTimer = setInterval(tickBomb, 100);
+        }
+
+        // --- تحديث واجهة اللعب ---
+        function updateGameUI() {
+            const currPlayer = players[currentPlayerIndex];
+            document.getElementById('current-player-name').innerText = currPlayer.name;
+
+            // تحديث الشريط السفلي (القلوب)
+            const statusBar = document.getElementById('game-status-bar');
+            statusBar.innerHTML = '';
+            players.forEach(p => {
+                let isDead = p.lives <= 0 ? 'dead' : '';
+                let heartsStr = '❤️'.repeat(p.lives) + '🖤'.repeat(3 - p.lives);
+                statusBar.innerHTML += `
+                    <div class="status-player ${isDead}">
+                        <div>${p.name}</div>
+                        <div class="hearts">${heartsStr}</div>
+                    </div>
+                `;
+            });
+
+            // تصفير أنيميشن القنبلة
+            const bombIcon = document.getElementById('bomb-icon');
+            bombIcon.className = 'bomb-container ticking-slow';
+        }
+
+        // --- تمرير القنبلة ---
+        function passBomb() {
+            if (isExploded) return;
+
+            // انتقال الدور للاعب الحي التالي
+            do {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            } while (players[currentPlayerIndex].lives <= 0);
+
+            // تحديث الشاشة بدون ما يوقف العداد
+            updateGameUI();
+        }
+
+        // --- العداد وتأثيرات القنبلة ---
+        function tickBomb() {
+            if (isExploded) return;
+            timeElapsed += 100;
+
+            const bombIcon = document.getElementById('bomb-icon');
+            
+            // تغيير شكل القنبلة حسب اقتراب الانفجار
+            let timeLeft = fuseTimeLimit - timeElapsed;
+
+            if (timeLeft <= 0) {
+                explode();
+            } else if (timeLeft < 4000) {
+                // آخر 4 ثواني: جنون!
+                if(bombIcon.className !== 'bomb-container ticking-crazy') bombIcon.className = 'bomb-container ticking-crazy';
+            } else if (timeLeft < 10000) {
+                // آخر 10 ثواني: سريعة
+                if(bombIcon.className !== 'bomb-container ticking-fast') bombIcon.className = 'bomb-container ticking-fast';
+            }
+        }
+
+        // --- الانفجار 💥 ---
+        function explode() {
+            isExploded = true;
+            clearInterval(bombTimer);
+
+            const loser = players[currentPlayerIndex];
+            loser.lives -= 1;
+
+            // تأثير الوميض
+            document.getElementById('explosion-bg').style.opacity = '0.8';
+            setTimeout(() => { document.getElementById('explosion-bg').style.opacity = '0'; }, 300);
+
+            // تحديث شاشة الانفجار
+            document.getElementById('boom-loser').innerText = `انفجرت في وجه ${loser.name}! 🤣`;
+            
+            if (loser.lives > 0) {
+                document.getElementById('boom-lives-left').innerText = `باقي لك: ${'❤️'.repeat(loser.lives)}`;
+            } else {
+                document.getElementById('boom-lives-left').innerText = "ودّع الملاعب! 💀 طلعت برا اللعبة!";
+            }
+
+            setTimeout(() => {
+                showScreen('scr-boom');
+            }, 800); // تأخير بسيط عشان يستوعبون الانفجار
+        }
+
+    </script>
+</body>
+</html>
